@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Playground - DevPort</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .code-block {
+            position: relative;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .code-block:hover .copy-btn {
+            opacity: 1;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .spinner {
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold gradient-bg bg-clip-text text-transparent">DevPort</span>
+                    <span class="ml-3 text-gray-400">|</span>
+                    <span class="ml-3 text-gray-600">CodeBex APIs</span>
+                </div>
+                <div class="flex items-center space-x-8">
+                    <a href="index.html" class="text-gray-700 hover:text-purple-600 transition">Home</a>
+                    <a href="docs.html" class="text-gray-700 hover:text-purple-600 transition">Docs</a>
+                    <a href="playground.html" class="text-purple-600 font-semibold transition">Playground</a>
+                    <a href="changelog.html" class="text-gray-700 hover:text-purple-600 transition">Changelog</a>
+                    <button class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition">Get API Key</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="mb-8 fade-in">
+            <h1 class="text-4xl font-bold mb-4">API Playground</h1>
+            <p class="text-lg text-gray-600">Test API endpoints in real-time with our interactive playground</p>
+        </div>
+        
+        <div class="grid lg:grid-cols-2 gap-8">
+            <!-- Request Panel -->
+            <div class="bg-white rounded-xl shadow-sm p-6 fade-in">
+                <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                    </svg>
+                    Request Configuration
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">HTTP Method</label>
+                        <select id="method" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent" onchange="updateBodyVisibility()">
+                            <option>GET</option>
+                            <option>POST</option>
+                            <option>PUT</option>
+                            <option>PATCH</option>
+                            <option>DELETE</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Endpoint</label>
+                        <select id="endpoint" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent" onchange="updateExample()">
+                            <option value="/v1/users">GET /v1/users - List all users</option>
+                            <option value="/v1/users/:id">GET /v1/users/:id - Get user by ID</option>
+                            <option value="/v1/users/create">POST /v1/users - Create new user</option>
+                            <option value="/v1/products">GET /v1/products - List products</option>
+                            <option value="/v1/orders">GET /v1/orders - List orders</option>
+                            <option value="/v1/orders/create">POST /v1/orders - Create order</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">API Key</label>
+                        <input id="apiKey" type="text" placeholder="sk_live_..." class="w-full border border-gray-300 rounded-lg px-4 py-2 font-mono text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent" value="sk_test_abc123xyz789">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Headers</label>
+                        <textarea id="headers" class="w-full border border-gray-300 rounded-lg px-4 py-2 font-mono text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent" rows="3">Content-Type: application/json</textarea>
+                    </div>
+
+                    <div id="bodySection">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Request Body (JSON)</label>
+                        <textarea id="body" class="w-full border border-gray-300 rounded-lg px-4 py-2 font-mono text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent" rows="8">{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "role": "member"
+}</textarea>
+                    </div>
+
+                    <button onclick="sendRequest()" class="w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                        </svg>
+                        Send Request
+                    </button>
+
+                    <button onclick="clearAll()" class="w-full border border-gray-300 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-50 transition">
+                        Clear All
+                    </button>
+                </div>
+            </div>
+
+            <!-- Response Panel -->
+            <div class="bg-white rounded-xl shadow-sm p-6 fade-in" style="animation-delay: 0.1s">
+                <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Response
+                </h2>
+                
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex items-center gap-4">
+                            <div>
+                                <div class="text-xs text-gray-500 mb-1">Status</div>
+                                <span id="status" class="px-3 py-1 bg-gray-200 rounded-full text-sm font-medium">-</span>
+                            </div>
+                            <div class="border-l border-gray-300 h-8"></div>
+                            <div>
+                                <div class="text-xs text-gray-500 mb-1">Time</div>
+                                <span id="time" class="text-sm font-medium text-gray-700">-</span>
+                            </div>
+                            <div class="border-l border-gray-300 h-8"></div>
+                            <div>
+                                <div class="text-xs text-gray-500 mb-1">Size</div>
+                                <span id="size" class="text-sm font-medium text-gray-700">-</span>
+                            </div>
+                        </div>
+                        <div id="loadingSpinner" class="hidden">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-sm font-medium text-gray-700">Response Body</label>
+                            <button id="copyResponseBtn" class="text-sm text-purple-600 hover:text-purple-700 font-medium" onclick="copyResponse()" style="display: none;">
+                                Copy Response
+                            </button>
+                        </div>
+                        <div class="code-block">
+                            <pre id="response" class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm min-h-[400px]"><code class="language-json">// Click "Send Request" to see the response here
+
+{
+  "message": "Waiting for request..."
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div id="responseHeaders" style="display: none;">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Response Headers</label>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <pre id="headersContent" class="text-xs font-mono text-gray-700"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Example Requests -->
+        <div class="mt-12 bg-white rounded-xl shadow-sm p-8 fade-in" style="animation-delay: 0.2s">
+            <h2 class="text-2xl font-bold mb-6">Example Requests</h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <button onclick="loadExample('list-users')" class="text-left p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:shadow-md transition">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-semibold">GET</span>
+                        <span class="font-mono text-sm text-gray-700">/v1/users</span>
+                    </div>
+                    <p class="text-sm text-gray-600">List all users</p>
+                </button>
+                
+                <button onclick="loadExample('create-user')" class="text-left p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:shadow-md transition">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold">POST</span>
+                        <span class="font-mono text-sm text-gray-700">/v1/users</span>
+                    </div>
+                    <p class="text-sm text-gray-600">Create a new user</p>
+                </button>
+                
+                <button onclick="loadExample('get-user')" class="text-left p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:shadow-md transition">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-semibold">GET</span>
+                        <span class="font-mono text-sm text-gray-700">/v1/users/:id</span>
+                    </div>
+                    <p class="text-sm text-gray-600">Get user by ID</p>
+                </button>
+
+                <button onclick="loadExample('list-products')" class="text-left p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:shadow-md transition">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-semibold">GET</span>
+                        <span class="font-mono text-sm text-gray-700">/v1/products</span>
+                    </div>
+                    <p class="text-sm text-gray-600">List all products</p>
+                </button>
+
+                <button onclick="loadExample('create-order')" class="text-left p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:shadow-md transition">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold">POST</span>
+                        <span class="font-mono text-sm text-gray-700">/v1/orders</span>
+                    </div>
+                    <p class="text-sm text-gray-600">Create a new order</p>
+                </button>
+
+                <button onclick="loadExample('delete-user')" class="text-left p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:shadow-md transition">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-semibold">DELETE</span>
+                        <span class="font-mono text-sm text-gray-700">/v1/users/:id</span>
+                    </div>
+                    <p class="text-sm text-gray-600">Delete a user</p>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock API responses
+        const mockResponses = {
+            '/v1/users': {
+                success: true,
+                data: [
+                    {
+                        id: 'usr_123',
+                        name: 'John Doe',
+                        email: 'john@example.com',
+                        role: 'admin',
+                        created_at: '2024-10-15T10:30:00Z'
+                    },
+                    {
+                        id: 'usr_124',
+                        name: 'Jane Smith',
+                        email: 'jane@example.com',
+                        role: 'member',
+                        created_at: '2024-10-14T09:20:00Z'
+                    },
+                    {
+                        id: 'usr_125',
+                        name: 'Bob Johnson',
+                        email: 'bob@example.com',
+                        role: 'member',
+                        created_at: '2024-10-13T15:45:00Z'
+                    }
+                ],
+                meta: {
+                    total: 3,
+                    page: 1,
+                    per_page: 10
+                }
+            },
+            '/v1/users/:id': {
+                success: true,
+                data: {
+                    id: 'usr_123',
+                    name: 'John Doe',
+                    email: 'john@example.com',
+                    role: 'admin',
+                    created_at: '2024-10-15T10:30:00Z',
+                    updated_at: '2024-10-20T08:15:00Z',
+                    metadata: {
+                        last_login: '2024-10-25T12:00:00Z',
+                        login_count: 42
+                    }
+                }
+            },
+            '/v1/users/create': {
+                success: true,
+                data: {
+                    id: 'usr_126',
+                    name: 'John Doe',
+                    email: 'john@example.com',
+                    role: 'member',
+                    created_at: '2024-10-25T14:22:00Z'
+                },
+                message: 'User created successfully'
+            },
+            '/v1/products': {
+                success: true,
+                data: [
+                    {
+                        id: 'prod_001',
+                        name: 'Premium Plan',
+                        description: 'Full access to all features',
+                        price: 99.99,
+                        currency: 'USD',
+                        billing_period: 'monthly'
+                    },
+                    {
+                        id: 'prod_002',
+                        name: 'Enterprise Plan',
+                        description: 'Advanced features for teams',
+                        price: 299.99,
+                        currency: 'USD',
+                        billing_period: 'monthly'
+                    }
+                ],
+                meta: {
+                    total: 2
+                }
+            },
+            '/v1/orders': {
+                success: true,
+                data: [
+                    {
+                        id: 'ord_001',
+                        user_id: 'usr_123',
+                        product_id: 'prod_001',
+                        total: 99.99,
+                        status: 'completed',
+                        created_at: '2024-10-25T10:30:00Z'
+                    }
+                ],
+                meta: {
+                    total: 1
+                }
+            },
+            '/v1/orders/create': {
+                success: true,
+                data: {
+                    id: 'ord_002',
+                    user_id: 'usr_123',
+                    product_id: 'prod_001',
+                    total: 99.99,
+                    status: 'pending',
+                    created_at: '2024-10-25T14:22:00Z'
+                },
+                message: 'Order created successfully'
+            }
+        };
+
+        function updateBodyVisibility() {
+            const method = document.getElementById('method').value;
+            const bodySection = document.getElementById('bodySection');
+            if (method === 'GET' || method === 'DELETE') {
+                bodySection.style.display = 'none';
+            } else {
+                bodySection.style.display = 'block';
+            }
+        }
+
+        function updateExample() {
+            const endpoint = document.getElementById('endpoint').value;
+            const bodyTextarea = document.getElementById('body');
+            
+            if (endpoint === '/v1/users/create') {
+                document.getElementById('method').value = 'POST';
+                bodyTextarea.value = JSON.stringify({
+                    name: "John Doe",
+                    email: "john@example.com",
+                    role: "member"
+                }, null, 2);
+            } else if (endpoint === '/v1/orders/create') {
+                document.getElementById('method').value = 'POST';
+                bodyTextarea.value = JSON.stringify({
+                    user_id: "usr_123",
+                    product_id: "prod_001",
+                    quantity: 1
+                }, null, 2);
+            } else {
+                document.getElementById('method').value = 'GET';
+            }
+            updateBodyVisibility();
+        }
+
+        function sendRequest() {
+            const method = document.getElementById('method').value;
+            const endpoint = document.getElementById('endpoint').value;
+            const statusEl = document.getElementById('status');
+            const timeEl = document.getElementById('time');
+            const sizeEl = document.getElementById('size');
+            const responseEl = document.getElementById('response');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const copyBtn = document.getElementById('copyResponseBtn');
+            const headersSection = document.getElementById('responseHeaders');
+            const headersContent = document.getElementById('headersContent');
+
+            // Show loading state
+            loadingSpinner.classList.remove('hidden');
+            statusEl.textContent = 'Loading...';
+            statusEl.className = 'px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium';
+            
+            const startTime = Date.now();
+            
+            setTimeout(() => {
+                const endTime = Date.now();
+                const duration = endTime - startTime;
+                
+                // Get mock response
+                const response = mockResponses[endpoint] || {
+                    success: true,
+                    message: 'Request successful',
+                    data: {}
+                };
+
+                // Update status
+                statusEl.textContent = '200 OK';
+                statusEl.className = 'px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium';
+                
+                // Update time
+                timeEl.textContent = `${duration}ms`;
+                
+                // Update size
+                const responseSize = JSON.stringify(response).length;
+                sizeEl.textContent = `${(responseSize / 1024).toFixed(2)} KB`;
+                
+                // Update response
+                const formattedResponse = JSON.stringify(response, null, 2);
+                responseEl.querySelector('code').textContent = formattedResponse;
+                Prism.highlightElement(responseEl.querySelector('code'));
+
+                // Show headers
+                headersContent.textContent = `content-type: application/json
+x-ratelimit-limit: 1000
+x-ratelimit-remaining: 847
+x-ratelimit-reset: 1729864800
+x-request-id: req_${Math.random().toString(36).substr(2, 9)}
+date: ${new Date().toUTCString()}`;
+                headersSection.style.display = 'block';
+                
+                // Hide loading spinner
+                loadingSpinner.classList.add('hidden');
+                
+                // Show copy button
+                copyBtn.style.display = 'block';
+            }, 800);
+        }
+
+        function copyResponse() {
+            const responseText = document.getElementById('response').querySelector('code').textContent;
+            navigator.clipboard.writeText(responseText).then(() => {
+                const btn = document.getElementById('copyResponseBtn');
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.classList.add('text-green-600');
+                
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.classList.remove('text-green-600');
+                }, 2000);
+            });
+        }
+
+        function loadExample(type) {
+            const examples = {
+                'list-users': {
+                    method: 'GET',
+                    endpoint: '/v1/users'
+                },
+                'create-user': {
+                    method: 'POST',
+                    endpoint: '/v1/users/create',
+                    body: {
+                        name: "Alice Williams",
+                        email: "alice@example.com",
+                        role: "member"
+                    }
+                },
+                'get-user': {
+                    method: 'GET',
+                    endpoint: '/v1/users/:id'
+                },
+                'list-products': {
+                    method: 'GET',
+                    endpoint: '/v1/products'
+                },
+                'create-order': {
+                    method: 'POST',
+                    endpoint: '/v1/orders/create',
+                    body: {
+                        user_id: "usr_123",
+                        product_id: "prod_001",
+                        quantity: 1
+                    }
+                },
+                'delete-user': {
+                    method: 'DELETE',
+                    endpoint: '/v1/users/:id'
+                }
+            };
+
+            const example = examples[type];
+            if (example) {
+                document.getElementById('method').value = example.method;
+                document.getElementById('endpoint').value = example.endpoint;
+                
+                if (example.body) {
+                    document.getElementById('body').value = JSON.stringify(example.body, null, 2);
+                }
+                
+                updateBodyVisibility();
+                
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function clearAll() {
+            document.getElementById('method').value = 'GET';
+            document.getElementById('endpoint').value = '/v1/users';
+            document.getElementById('apiKey').value = 'sk_test_abc123xyz789';
+            document.getElementById('headers').value = 'Content-Type: application/json';
+            document.getElementById('body').value = '{\n  "name": "John Doe",\n  "email": "john@example.com",\n  "role": "member"\n}';
+            
+            document.getElementById('status').textContent = '-';
+            document.getElementById('status').className = 'px-3 py-1 bg-gray-200 rounded-full text-sm font-medium';
+            document.getElementById('time').textContent = '-';
+            document.getElementById('size').textContent = '-';
+            document.getElementById('response').querySelector('code').textContent = '// Click "Send Request" to see the response here\n\n{\n  "message": "Waiting for request..."\n}';
+            document.getElementById('copyResponseBtn').style.display = 'none';
+            document.getElementById('responseHeaders').style.display = 'none';
+            
+            updateBodyVisibility();
+        }
+
+        // Initialize
+        updateBodyVisibility();
+        Prism.highlightAll();
+    </script>
+</body>
+</html>
